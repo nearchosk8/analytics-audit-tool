@@ -15,6 +15,7 @@ from auditors.ga4_auditor import audit_ga4
 from auditors.gtm_auditor import audit_gtm
 from auditors.datalayer_auditor import audit_datalayer
 from report import print_report
+from export_html import export_report
 
 
 def main():
@@ -43,8 +44,23 @@ def main():
     datalayer_results = audit_datalayer(setup)
     print("  ✅ DataLayer audit complete")
     
-    # Step 3: Generate report
+    # Step 3: Display terminal report
     print_report(ga4_results, gtm_results, datalayer_results)
+    
+    # Step 4: Offer HTML export
+    print("\n")
+    export_choice = input("📄 Export report as HTML file? (y/n): ").strip().lower()
+    
+    if export_choice == 'y':
+        filepath = export_report(ga4_results, gtm_results, datalayer_results, setup)
+        print(f"\n  ✅ Report saved to: {filepath}")
+        print(f"  📂 Open it in your browser to see the formatted report.")
+        
+        # Try to open in browser automatically on Mac
+        try:
+            os.system(f'open "{filepath}"')
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

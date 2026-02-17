@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Tracking Audit Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a; 
+            color: #e2e8f0;
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        /* Header */
+        .header { 
+            text-align: center; 
+            padding: 2.5rem 2rem;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            border: 1px solid #475569;
+        }
+        .header h1 { 
+            font-size: 1.8rem; 
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #f8fafc;
+        }
+        .header .subtitle { color: #94a3b8; font-size: 0.9rem; }
+        .header .timestamp { color: #64748b; font-size: 0.8rem; margin-top: 0.5rem; }
+        
+        /* Overall Score */
+        .overall-score {
+            text-align: center;
+            padding: 2rem;
+            background: #1e293b;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            border: 1px solid #334155;
+        }
+        .score-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 6px solid #f59e0b;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #f59e0b;
+            margin-bottom: 1rem;
+        }
+        .score-label { color: #94a3b8; font-size: 0.9rem; }
+        
+        /* Severity summary */
+        .severity-summary {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .severity-count {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+        .severity-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        /* Score bars */
+        .scores-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .score-card {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .score-card .label { font-size: 0.8rem; color: #94a3b8; }
+        .score-card .value { font-size: 1.5rem; font-weight: 700; }
+        
+        /* Setup info */
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        .setup-item {
+            background: #0f172a;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+        }
+        .setup-label { font-size: 0.75rem; color: #64748b; display: block; }
+        .setup-value { font-size: 0.9rem; color: #e2e8f0; font-weight: 500; }
+        
+        /* Sections */
+        .section {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #334155;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+        }
+        .section-header h2 { font-size: 1.2rem; color: #f8fafc; }
+        .section-score { font-size: 1.5rem; font-weight: 800; }
+        .section-summary { 
+            color: #94a3b8; 
+            font-size: 0.9rem; 
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+        .score-bar-container {
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .score-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+        
+        /* Findings */
+        .finding {
+            background: #0f172a;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+        .finding-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            cursor: pointer;
+        }
+        .finding-number {
+            color: #64748b;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .finding-title {
+            flex: 1;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #f1f5f9;
+        }
+        .severity-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: white;
+        }
+        .finding-body {
+            padding: 0 1rem 1rem 1rem;
+        }
+        .finding-row {
+            display: flex;
+            gap: 1rem;
+            padding: 0.4rem 0;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #1e293b;
+        }
+        .finding-row:last-child { border-bottom: none; }
+        .finding-label {
+            min-width: 110px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .finding-value { color: #cbd5e1; }
+        .finding-value.fix { color: #60a5fa; }
+        
+        /* Action Items */
+        .actions {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #334155;
+        }
+        .actions h2 { 
+            font-size: 1.2rem; 
+            margin-bottom: 1.5rem;
+            color: #f8fafc;
+        }
+        .action-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        .action-item:last-child { border-bottom: none; }
+        .action-number {
+            min-width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: white;
+        }
+        .action-title { font-weight: 600; font-size: 0.9rem; color: #f1f5f9; }
+        .action-fix { font-size: 0.85rem; color: #60a5fa; margin-top: 0.25rem; }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+        .footer a { color: #60a5fa; text-decoration: none; }
+        
+        @media print {
+            body { background: white; color: #1e293b; padding: 1rem; }
+            .container { max-width: 100%; }
+            .section, .overall-score, .header, .actions { 
+                border: 1px solid #e2e8f0; 
+                background: white;
+            }
+            .finding { background: #f8fafc; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Analytics Tracking Audit Report</h1>
+            <div class="subtitle">Powered by Claude AI</div>
+            <div class="timestamp">Generated on February 17, 2026 at 00:51</div>
+        </div>
+
+        <div class="overall-score">
+            <div class="score-circle">48</div>
+            <div class="score-label">Overall Score out of 100</div>
+            
+            <div class="severity-summary">
+                <div class="severity-count"><span class="severity-dot" style="background:#ef4444"></span> 1 Critical</div>
+                <div class="severity-count"><span class="severity-dot" style="background:#f97316"></span> 7 High</div>
+                <div class="severity-count"><span class="severity-dot" style="background:#f59e0b"></span> 9 Medium</div>
+                <div class="severity-count"><span class="severity-dot" style="background:#22c55e"></span> 2 Low</div>
+            </div>
+            
+            <div class="scores-grid">
+                <div class="score-card">
+                    <div class="label">GA4 Events</div>
+                    <div class="value" style="color: #3b82f6">35</div>
+                </div>
+                <div class="score-card">
+                    <div class="label">GTM Health</div>
+                    <div class="value" style="color: #f97316">65</div>
+                </div>
+                <div class="score-card">
+                    <div class="label">DataLayer</div>
+                    <div class="value" style="color: #a855f7">45</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="padding: 1.5rem 2rem;">
+            <h3 style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 1rem;">Setup Analyzed</h3>
+            
+        <div class="setup-grid">
+            <div class="setup-item"><span class="setup-label">Industry</span><span class="setup-value">Lead Generation / B2B</span></div>
+            <div class="setup-item"><span class="setup-label">Website Type</span><span class="setup-value">Multi-page website with forms</span></div>
+            <div class="setup-item"><span class="setup-label">Platform</span><span class="setup-value">Different frameworks</span></div>
+            <div class="setup-item"><span class="setup-label">Goals</span><span class="setup-value">Generate leads / form submissions</span></div>
+        </div>
+        </div>
+
+        
+        <div class="section" id="ga4">
+            <div class="section-header" style="border-left: 4px solid #3b82f6">
+                <h2>GA4 Event Coverage</h2>
+                <div class="section-score" style="color: #3b82f6">35/100</div>
+            </div>
+            <p class="section-summary">The GA4 implementation shows significant issues with naming conventions using spaces and non-English terms, missing critical GA4 recommended events for lead generation, and lacks structured funnel tracking. While the business logic is captured through custom events, the technical implementation needs substantial cleanup to leverage GA4's full capabilities and ensure reliable reporting and analysis for B2B lead generation optimization.</p>
+            <div class="score-bar-container">
+                <div class="score-bar" style="width: 35%; background: #3b82f6"></div>
+            </div>
+            
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#1</span>
+                    <span class="finding-title">Missing critical lead generation events</span>
+                    <span class="severity-badge" style="background: #ef4444">CRITICAL</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">missing_event</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">No standard GA4 events like 'generate_lead', 'form_start', 'form_submit'. Missing page_view tracking and user engagement events.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Implement GA4 recommended events: 'generate_lead' for successful form submissions, 'form_start' when users begin forms, 'form_submit' for completions.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Cannot properly track lead generation funnel performance or use GA4's built-in conversion optimization features.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#2</span>
+                    <span class="finding-title">Critical naming convention violations</span>
+                    <span class="severity-badge" style="background: #f97316">HIGH</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">naming</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Multiple events use spaces and non-English characters: 'start funnel', 'premie bekend', 'start funnel 1.1', 'aanvraag voltooid', 'offerte gegevens', etc. GA4 recommends snake_case with no spaces.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Rename all events to snake_case format: 'start_funnel', 'premium_known', 'start_funnel_1_1', 'request_completed', 'quote_details', etc.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Poor naming conventions make data analysis difficult, reporting inconsistent, and integration with other tools problematic.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#3</span>
+                    <span class="finding-title">Inconsistent funnel event structure</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">config</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Events like 'start funnel', 'start funnel 1.1', and various form steps lack clear hierarchy and consistent parameter structure.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Create structured funnel events with consistent parameters: step_number, form_name, funnel_stage. Use events like 'funnel_step_viewed', 'funnel_step_completed'.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Difficult to analyze conversion funnels and identify drop-off points, limiting optimization opportunities.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#4</span>
+                    <span class="finding-title">Missing recommended GA4 parameters</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">wrong_params</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Events likely missing standard parameters like currency, value, item_id, content_type, method, etc. based on GA4 documentation.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Add recommended parameters: 'currency' and 'value' for lead events, 'method' for form submissions, 'content_type' for content interactions.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Reduced reporting capabilities and inability to use enhanced measurement features or audience building.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#5</span>
+                    <span class="finding-title">Missing error and abandonment tracking</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">missing_event</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">No events for form errors, validation failures, or explicit form abandonment tracking.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Implement 'form_error', 'validation_failed', 'form_abandoned' events to track user friction points.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Cannot identify and optimize points where users encounter difficulties in the lead generation process.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#6</span>
+                    <span class="finding-title">Duplicate or redundant events</span>
+                    <span class="severity-badge" style="background: #22c55e">LOW</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">config</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Similar events like 'overzicht' and 'gegevens overzicht', 'aanvragen' and 'aanvraag maken' suggest potential duplication.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Consolidate similar events and use parameters to differentiate: single 'overview_viewed' event with 'section' parameter.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Data fragmentation makes analysis more complex and may lead to inflated event counts.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="section" id="gtm">
+            <div class="section-header" style="border-left: 4px solid #f97316">
+                <h2>GTM Container Health</h2>
+                <div class="section-score" style="color: #f97316">65/100</div>
+            </div>
+            <p class="section-summary">This GTM container shows a complex insurance industry setup with significant duplicate tracking issues, particularly complete server-side tag duplication that risks data inflation. While comprehensive in scope with good platform coverage (GA4, Google Ads, Bing, etc.), it suffers from security risks due to excessive custom HTML tags, inconsistent naming conventions, and potentially inadequate consent mode implementation. The container requires substantial cleanup to eliminate duplicates, standardize naming, enhance security measures, and ensure GDPR compliance before optimization efforts can be effective.</p>
+            <div class="score-bar-container">
+                <div class="score-bar" style="width: 65%; background: #f97316"></div>
+            </div>
+            
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#1</span>
+                    <span class="finding-title">Duplicate GA4 configuration tags detected</span>
+                    <span class="severity-badge" style="background: #f97316">HIGH</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">duplicate</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Found multiple GA4 initialization tags: 'googleTag.initialisation.Allianz.nl plus subdomains', 'googleTag.initialisation.Allianz.nl plus subdomains.serverside', 'googleTag.Initialisation.Allianzcollectief.nl', and 'googleTag.VpV.Allianzcollectief.nl'. This creates duplicate GA4 config tags which can cause data collection issues.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Consolidate to one primary GA4 config tag per domain and ensure server-side tags don't duplicate client-side configurations</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Duplicate configurations can lead to inflated metrics, tracking inconsistencies, and unreliable analytics data affecting business decisions</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#2</span>
+                    <span class="finding-title">Excessive custom HTML tags present</span>
+                    <span class="severity-badge" style="background: #f97316">HIGH</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">security</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Identified 25+ custom HTML tags including chatbot implementations, conversation widgets, and custom event handlers. Each represents a potential security and performance risk.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Audit all custom HTML tags for security vulnerabilities, implement CSP headers, and migrate to native GTM tag types where possible</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Custom HTML tags can introduce XSS vulnerabilities, slow page load times, and create maintenance overhead affecting user experience and security</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#3</span>
+                    <span class="finding-title">Consent mode configuration appears limited</span>
+                    <span class="severity-badge" style="background: #f97316">HIGH</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">consent</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Only 'bing.consent_mode.default' tag visible for consent management, but extensive tracking setup suggests insufficient consent mode implementation across all platforms.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Implement comprehensive consent mode for all tracking platforms (GA4, Google Ads, etc.) with proper default and update commands</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Inadequate consent management violates GDPR/privacy regulations, risking significant fines and legal liability</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#4</span>
+                    <span class="finding-title">Complete server-side tag duplication pattern</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">duplicate</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Every GA4 event tag has a corresponding '.serverside' duplicate (e.g., 'ga4.event.all' and 'ga4.event.all.serverside'). This suggests potential double-tracking setup without proper deduplication.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Implement proper server-side tracking with event deduplication using event_id parameter, or choose either client-side or server-side tracking per event type</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Double-tracking inflates conversion metrics and user engagement data, leading to incorrect ROI calculations and budget allocation decisions</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#5</span>
+                    <span class="finding-title">Inconsistent naming conventions</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">naming</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Mixed naming patterns observed: some tags use dots (ga4.event.all), others use underscores (funnel_start), and inconsistent capitalization. Temporary tag 'TEMP ads.conversion.AOV' suggests incomplete cleanup.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Establish and enforce consistent naming convention across all tags, triggers, and variables. Remove or finalize temporary tags.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Poor naming conventions make container maintenance difficult, increase risk of configuration errors, and slow development cycles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#6</span>
+                    <span class="finding-title">Cross-domain tracking complexity</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">performance</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Multiple domain-specific configurations (Allianz.nl, Allianzcollectief.nl) with separate tracking implementations may cause data fragmentation.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Implement unified cross-domain tracking strategy with proper linker configuration and consolidated reporting</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Fragmented tracking across domains provides incomplete customer journey visibility, affecting attribution and conversion optimization</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#7</span>
+                    <span class="finding-title">Potential unused legacy tags</span>
+                    <span class="severity-badge" style="background: #22c55e">LOW</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">unused</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Tags like 'prod_html.conversation24-button_egv' alongside 'html.conversation24-button_egv' suggest legacy versions that may not be actively used.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Audit tag usage through GTM preview mode and analytics, remove unused legacy tags to reduce container bloat</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Unused tags increase container size, slow loading times, and create maintenance overhead without providing business value</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="section" id="datalayer">
+            <div class="section-header" style="border-left: 4px solid #a855f7">
+                <h2>DataLayer Quality</h2>
+                <div class="section-score" style="color: #a855f7">45/100</div>
+            </div>
+            <p class="section-summary">This dataLayer implementation covers basic GTM initialization and consent management but has significant structural issues and missing essential tracking for a multi-page website with forms. The mix of gtag commands within the dataLayer array, duplicate consent events, and absence of page context and form tracking severely limits its effectiveness for comprehensive analytics and optimization.</p>
+            <div class="score-bar-container">
+                <div class="score-bar" style="width: 45%; background: #a855f7"></div>
+            </div>
+            
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#1</span>
+                    <span class="finding-title">Missing essential page and user context data</span>
+                    <span class="severity-badge" style="background: #f97316">HIGH</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">missing_data</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">No page_title, page_location, user_id, session_id, or page-specific data. For a multi-page website with forms, page context is critical.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Add page data: {"page_title": document.title, "page_location": location.href, "page_path": location.pathname} and user context data to relevant events.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Cannot properly track user journeys, page performance, or attribute form conversions to specific pages.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#2</span>
+                    <span class="finding-title">Array-indexed objects mixed with standard event objects</span>
+                    <span class="severity-badge" style="background: #f97316">HIGH</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">structure</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Objects with numeric keys (0, 1, 2) appear to be gtag commands but are mixed within the dataLayer array alongside standard event objects.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Separate gtag commands from dataLayer events. Use gtag('set', 'developer_id.dMWZhNz', true) instead of pushing indexed objects to dataLayer.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Non-standard structure can cause parsing issues in analytics tools and makes debugging significantly more difficult.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#3</span>
+                    <span class="finding-title">Missing form interaction and conversion tracking</span>
+                    <span class="severity-badge" style="background: #f97316">HIGH</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">missing_data</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">For a website with forms, there are no form_start, form_submit, form_error, or conversion events visible in the dataLayer.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Implement form tracking: {"event": "formStart", "formName": "contact", "formId": "form-id"}, {"event": "formSubmit", "formName": "contact", "success": true}</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Cannot measure form performance, conversion rates, or identify optimization opportunities for lead generation.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#4</span>
+                    <span class="finding-title">Inconsistent naming conventions across events</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">naming</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Mix of snake_case (cookie_consent_preferences, ads_data_redaction) and camelCase (gtm.uniqueEventId) conventions. Standard GTM events use camelCase while custom events use snake_case.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Standardize all custom events to camelCase: cookieConsentPreferences, adsDataRedaction, etc. Update event listeners accordingly.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Inconsistent naming makes tracking implementation harder to maintain and can cause confusion for developers.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#5</span>
+                    <span class="finding-title">Duplicate consent events without clear purpose</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">structure</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">Cookie consent events (preferences, statistics, marketing) fire twice with identical consent objects but different uniqueEventIds (80-82 and 1529-1531).</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Implement consent state checking before firing events: if(previousConsentState !== currentConsentState) { dataLayer.push(consentEvent); }</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Duplicate events can skew analytics data and trigger unnecessary tag executions, potentially affecting performance.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-number">#6</span>
+                    <span class="finding-title">Missing user engagement and session data</span>
+                    <span class="severity-badge" style="background: #f59e0b">MEDIUM</span>
+                </div>
+                <div class="finding-body">
+                    <div class="finding-row">
+                        <span class="finding-label">Category</span>
+                        <span class="finding-value">missing_data</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Details</span>
+                        <span class="finding-value">No user properties like user_type, session_start, traffic_source, or engagement metrics that are standard for multi-page websites.</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">How to Fix</span>
+                        <span class="finding-value fix">Add session context: {"user_type": "new|returning", "session_start": timestamp, "traffic_source": "organic|direct|referral"}</span>
+                    </div>
+                    <div class="finding-row">
+                        <span class="finding-label">Business Impact</span>
+                        <span class="finding-value">Limited ability to segment users, understand acquisition channels, or measure engagement across the website.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <h2>Priority Action Items</h2>
+            
+        <div class="action-item">
+            <div class="action-number" style="background: #ef4444">1</div>
+            <div class="action-content">
+                <div class="action-title">Missing critical lead generation events</div>
+                <div class="action-fix">Implement GA4 recommended events: 'generate_lead' for successful form submissions, 'form_start' when users begin forms, 'form_submit' for completions.</div>
+            </div>
+        </div>
+        <div class="action-item">
+            <div class="action-number" style="background: #f97316">2</div>
+            <div class="action-content">
+                <div class="action-title">Critical naming convention violations</div>
+                <div class="action-fix">Rename all events to snake_case format: 'start_funnel', 'premium_known', 'start_funnel_1_1', 'request_completed', 'quote_details', etc.</div>
+            </div>
+        </div>
+        <div class="action-item">
+            <div class="action-number" style="background: #f97316">3</div>
+            <div class="action-content">
+                <div class="action-title">Duplicate GA4 configuration tags detected</div>
+                <div class="action-fix">Consolidate to one primary GA4 config tag per domain and ensure server-side tags don't duplicate client-side configurations</div>
+            </div>
+        </div>
+        <div class="action-item">
+            <div class="action-number" style="background: #f97316">4</div>
+            <div class="action-content">
+                <div class="action-title">Excessive custom HTML tags present</div>
+                <div class="action-fix">Audit all custom HTML tags for security vulnerabilities, implement CSP headers, and migrate to native GTM tag types where possible</div>
+            </div>
+        </div>
+        <div class="action-item">
+            <div class="action-number" style="background: #f97316">5</div>
+            <div class="action-content">
+                <div class="action-title">Consent mode configuration appears limited</div>
+                <div class="action-fix">Implement comprehensive consent mode for all tracking platforms (GA4, Google Ads, etc.) with proper default and update commands</div>
+            </div>
+        </div>
+        <div class="action-item">
+            <div class="action-number" style="background: #f97316">6</div>
+            <div class="action-content">
+                <div class="action-title">Missing essential page and user context data</div>
+                <div class="action-fix">Add page data: {"page_title": document.title, "page_location": location.href, "page_path": location.pathname} and user context data to relevant events.</div>
+            </div>
+        </div>
+        <div class="action-item">
+            <div class="action-number" style="background: #f97316">7</div>
+            <div class="action-content">
+                <div class="action-title">Array-indexed objects mixed with standard event objects</div>
+                <div class="action-fix">Separate gtag commands from dataLayer events. Use gtag('set', 'developer_id.dMWZhNz', true) instead of pushing indexed objects to dataLayer.</div>
+            </div>
+        </div>
+        <div class="action-item">
+            <div class="action-number" style="background: #f97316">8</div>
+            <div class="action-content">
+                <div class="action-title">Missing form interaction and conversion tracking</div>
+                <div class="action-fix">Implement form tracking: {"event": "formStart", "formName": "contact", "formId": "form-id"}, {"event": "formSubmit", "formName": "contact", "success": true}</div>
+            </div>
+        </div>
+        </div>
+
+        <div class="footer">
+            <p>Generated by <strong>Analytics Audit Tool</strong> — Built with the Anthropic Claude API</p>
+            <p style="margin-top: 0.5rem;">
+                <a href="https://github.com/nearchosk8/analytics-audit-tool" target="_blank">View on GitHub</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
